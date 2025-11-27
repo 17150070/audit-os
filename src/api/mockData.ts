@@ -1,9 +1,9 @@
-export const mockData = {
+export const mockDataSend = {
     "os": {
         "name": "debian",
         "version": "9"
     },
-    "packages": [
+    "packages": [
         [
             "xorg-sgml-doctools",
             "1:1.11-1",

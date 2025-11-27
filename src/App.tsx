@@ -1,83 +1,149 @@
 import './App.css'
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {fetchAudit} from "./api/fetchAudit.ts";
-import {mockData} from "./api/mockData.ts";
 import {
     Form,
     Field,
     FormElement,
-    FormRenderProps,
     FormFieldSet,
-    FormSeparator
 } from '@progress/kendo-react-form';
 import { Button } from '@progress/kendo-react-buttons';
+import { PanelBar, PanelBarItem } from '@progress/kendo-react-layout';
+import { Card, CardBody } from '@progress/kendo-react-layout';
 import FormInput from "./components/FormInput.tsx";
 import FormTextArea from "./components/FormTextArea.tsx";
+import FormDropdown from "./components/FormDropdown.tsx";
 
 
 const App = ()=>  {
     const [loading, setLoading] = useState(false)
+    const [resultData, setResultData] = useState<any>(null);
+    const [error, setError] = useState<any>(null);
+
+
+    const parsePackagesData = (packagesText: string) => {
+        if (!packagesText.trim()) return [];
+        return packagesText.split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+                const parts = line.trim().split(/\s+/);
+                return parts.slice(0, 3);
+            })
+            .filter(pkg => pkg.length === 3);
+    };
 
     const sendAudit = (dataItem: any) => {
-        console.log("dataItem", dataItem)
         setLoading(true)
-        fetchAudit(mockData)
+        setResultData(null);
+        setError(null);
+        console.log("dataItem", dataItem);
+        const request = {
+            os: {
+                name: dataItem.OSName?.text || '',
+                version: dataItem.OSVersion || ''
+            },
+            packages: parsePackagesData(dataItem.packages || '')
+        };
+        fetchAudit(request)
             .then(response => {
-                console.log("response", response)})
-            .catch(error => {
-                console.log(error)
+                setResultData(response);
             })
-            .finally()
+            .catch(error => {
+                setError(error)
+            })
+            .finally(()=>{
+                setLoading(false)
+            })
     }
-
-
 
 
   return (
     <div>
         <Form
             onSubmit={sendAudit}
-            render={(formRenderProps: FormRenderProps) => (
-                <FormElement cols={2} style={{ maxWidth: 850 }}>
-                    <FormFieldSet legend="Personal Information" cols={2} colSpan={1}>
+            render={(formRenderProps) => (
+                <FormElement >
+                    <FormFieldSet >
                         <Field
-                            colSpan={1}
                             name={'OSName'}
-                            component={FormInput}
+                            component={FormDropdown}
                             label={'OS name'}
-                            placeholder={'Enter your OS name'}
+                            placeholder={'Select OS name'}
                         />
 
                         <Field
-                            colSpan={1}
                             name={'OSVersion'}
                             component={FormInput}
                             label={'OS version'}
                             placeholder={'Enter your OS version'}
                         />
+
+                        <Field
+                            id={'packages'}
+                            name={'packages'}
+                            label={'Packages'}
+                            rows={8}
+                            component={FormTextArea}
+                        />
                     </FormFieldSet>
-                    <FormSeparator colSpan={2} />
-                    <Field
-                        colSpan={2}
-                        id={'packages'}
-                        name={'packages'}
-                        label={'Packages'}
-                        optional={true}
-                        component={FormTextArea}
-                    />
                     <div className="k-form-buttons">
                         <Button
                             themeColor={'primary'}
                             type={'submit'}
-                            disabled={!formRenderProps.allowSubmit}
-
+                            disabled={!formRenderProps?.allowSubmit || loading}
                         >
-                            Audit
+                            {loading ? '...Loading' : 'Audit'}
                         </Button>
                     </div>
                 </FormElement>
             )}
         />
+
+        {(resultData || error) && (
+            <div style={{ marginTop: '30px' }}>
+                <Card>
+                    <CardBody>
+                        <h3 style={{ marginBottom: '15px', color: '#2e86ab' }}>
+                            Audit result:
+                        </h3>
+
+                        {error && (
+                            <PanelBar>
+                                <PanelBarItem title="" expanded={true}>
+                                    <div style={{
+                                        backgroundColor: '#ec7d7d',
+                                        padding: '15px 25px',
+                                        borderRadius: '12px',
+                                        border: '1px solid #fff',
+                                        color: '#000'
+                                    }}>
+                                        Ошибка: {JSON.stringify(error, null, 2)}
+                                    </div>
+                                </PanelBarItem>
+                            </PanelBar>
+                        )}
+
+                        {resultData && (
+                            <PanelBar>
+                                <PanelBarItem title="" expanded={true}>
+                                    <div style={{
+                                        backgroundColor: '#fff',
+                                        padding: '15px 25px',
+                                        borderRadius: '12px',
+                                        border: '1px solid #fff',
+                                        color: '#000'
+                                    }}>
+                                            <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                                                {JSON.stringify(resultData, null, 2)}
+                                            </pre>
+                                    </div>
+                                </PanelBarItem>
+                            </PanelBar>
+                        )}
+                    </CardBody>
+                </Card>
+            </div>
+        )}
     </div>
   )
 }
