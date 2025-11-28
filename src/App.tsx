@@ -13,13 +13,24 @@ import { Card, CardBody } from '@progress/kendo-react-layout';
 import FormInput from "./components/FormInput.tsx";
 import FormTextArea from "./components/FormTextArea.tsx";
 import FormDropdown from "./components/FormDropdown.tsx";
+import '@progress/kendo-theme-default/dist/all.css'
+import { Notification, NotificationGroup } from '@progress/kendo-react-notification';
+import { Slide } from '@progress/kendo-react-animation';
 
 
 const App = ()=>  {
     const [loading, setLoading] = useState(false)
     const [resultData, setResultData] = useState<any>(null);
     const [error, setError] = useState<any>(null);
+    const [notification, setNotification] = useState<any>({ success: false, error: false});
 
+
+    const onToggleNotification = (flag: string) => {
+        setNotification({...notification, [flag]: !notification[flag]});
+        setTimeout(()=>{
+            setNotification({...notification, [flag]: notification[flag]});
+        },5000)
+    }
 
     const parsePackagesData = (packagesText: string) => {
         if (!packagesText.trim()) return [];
@@ -39,7 +50,7 @@ const App = ()=>  {
         console.log("dataItem", dataItem);
         const request = {
             os: {
-                name: dataItem.OSName?.text || '',
+                name: dataItem.OSName?.value || '',
                 version: dataItem.OSVersion || ''
             },
             packages: parsePackagesData(dataItem.packages || '')
@@ -47,9 +58,12 @@ const App = ()=>  {
         fetchAudit(request)
             .then(response => {
                 setResultData(response);
+                onToggleNotification('success')
             })
             .catch(error => {
+                console.log("error", error);
                 setError(error)
+                onToggleNotification('error')
             })
             .finally(()=>{
                 setLoading(false)
@@ -59,6 +73,34 @@ const App = ()=>  {
 
   return (
     <div>
+        <NotificationGroup
+            style={{
+                right: 0,
+                top: 0,
+                alignItems: 'flex-start',
+                flexWrap: 'wrap-reverse'
+            }}
+        >
+            <Slide direction={notification.success ? 'up' : 'down'}>
+                {notification.success && <Notification
+                    type={{ style: 'success', icon: true }}
+                    closable={true}
+                    onClose={() => setNotification({ ...notification, success: false })}
+                >
+                    <span>Данные успешно получены</span>
+                </Notification>}
+            </Slide>
+            <Slide direction={notification.success ? 'up' : 'down'}>
+                {notification.error && <Notification
+                    type={{ style: 'error', icon: true }}
+                    closable={true}
+                    onClose={() => setNotification({ ...notification, error: false })}
+                >
+                    <span>Не удалось получить данные. Код {error?.status}</span>
+                </Notification>}
+            </Slide>
+        </NotificationGroup>
+
         <Form
             onSubmit={sendAudit}
             render={(formRenderProps) => (
@@ -109,15 +151,9 @@ const App = ()=>  {
 
                         {error && (
                             <PanelBar>
-                                <PanelBarItem title="" expanded={true}>
-                                    <div style={{
-                                        backgroundColor: '#ec7d7d',
-                                        padding: '15px 25px',
-                                        borderRadius: '12px',
-                                        border: '1px solid #fff',
-                                        color: '#000'
-                                    }}>
-                                        Ошибка: {JSON.stringify(error, null, 2)}
+                                <PanelBarItem title="Ошибка:" expanded={true}>
+                                    <div style={{backgroundColor: '#ec7d7d', padding: '15px 25px',}}>
+                                        {JSON.stringify(error, null, 2)}
                                     </div>
                                 </PanelBarItem>
                             </PanelBar>
@@ -125,14 +161,8 @@ const App = ()=>  {
 
                         {resultData && (
                             <PanelBar>
-                                <PanelBarItem title="" expanded={true}>
-                                    <div style={{
-                                        backgroundColor: '#fff',
-                                        padding: '15px 25px',
-                                        borderRadius: '12px',
-                                        border: '1px solid #fff',
-                                        color: '#000'
-                                    }}>
+                                <PanelBarItem title="Данные из Api:" expanded={true}>
+                                    <div style={{padding: '15px 25px',}}>
                                             <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                                                 {JSON.stringify(resultData, null, 2)}
                                             </pre>

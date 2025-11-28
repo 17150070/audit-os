@@ -23,10 +23,10 @@ const FormDropdown = (fieldRenderProps: any) => {
     const errorId = showValidationMessage ? `${id}_error` : '';
 
     const dropdownData = [
-        { text: 'Debian', value: 'debian' },
-        { text: 'Ubuntu', value: 'ubuntu' },
-        { text: 'CentOS', value: 'centos' },
-        { text: 'Redhat', value: 'redhat' }
+        { text: 'Debian', value: 'Debian' },
+        { text: 'Ubuntu', value: 'Ubuntu' },
+        { text: 'CentOS', value: 'CentOS' },
+        { text: 'Redhat', value: 'Redhat' }
     ];
 
     return (
